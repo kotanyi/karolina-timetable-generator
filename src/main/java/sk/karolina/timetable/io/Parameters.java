@@ -14,8 +14,10 @@ public class Parameters {
 	private int iterations, hours, maxPointMutations;
 	private boolean startFromCurrentTimetable;
 	private List<Level> currentTimetable;
+	private int timetableHolePenaltyStrategy;
 	private int thresholdUnwantedPreference, thresholdWantedPreference;
 	private double penalty1UnwantedBetweenWanted, penalty2UnwantedBetweenWanted;
+	private double logisticFunctionK, logisticFunctionXNaught;
 	private boolean isPripravkaAtBeginning;
 	private int notEnoughSparesForSquare, incompleteSquare;
 	private double penaltyNotEnoughSpares, penaltyIncomplete;
@@ -35,10 +37,13 @@ public class Parameters {
 		currentTimetable = Arrays.asList(properties.getProperty("currentTimetable").split(", ")).stream()
 				.map(string -> Level.valueOf(string)).collect(Collectors.toList());
 
+		timetableHolePenaltyStrategy = Integer.parseInt(properties.getProperty("timetableHolePenaltyStrategy"));
 		thresholdUnwantedPreference = Integer.parseInt(properties.getProperty("thresholdUnwantedPreference"));
 		thresholdWantedPreference = Integer.parseInt(properties.getProperty("thresholdWantedPreference"));
 		penalty1UnwantedBetweenWanted = Double.parseDouble(properties.getProperty("penalty1UnwantedBetweenWanted"));
 		penalty2UnwantedBetweenWanted = Double.parseDouble(properties.getProperty("penalty2UnwantedBetweenWanted"));
+		logisticFunctionK = Double.parseDouble(properties.getProperty("logisticFunctionK"));
+		logisticFunctionXNaught = Double.parseDouble(properties.getProperty("logisticFunctionXNaught"));
 		isPripravkaAtBeginning = Boolean.parseBoolean(properties.getProperty("isPripravkaAtBeginning"));
 		notEnoughSparesForSquare = Integer.parseInt(properties.getProperty("notEnoughSparesForSquare"));
 		incompleteSquare = Integer.parseInt(properties.getProperty("incompleteSquare"));
@@ -79,6 +84,10 @@ public class Parameters {
 		return currentTimetable;
 	}
 
+	public int getTimetableHolePenaltyStrategy() {
+		return timetableHolePenaltyStrategy;
+	}
+
 	public int getThresholdUnwantedPreference() {
 		return thresholdUnwantedPreference;
 	}
@@ -93,6 +102,14 @@ public class Parameters {
 
 	public double getPenalty2UnwantedBetweenWanted() {
 		return penalty2UnwantedBetweenWanted;
+	}
+
+	public double getLogisticFunctionK() {
+		return logisticFunctionK;
+	}
+
+	public double getLogisticFunctionXNaught() {
+		return logisticFunctionXNaught;
 	}
 
 	public boolean isPripravkaAtBeginning() {

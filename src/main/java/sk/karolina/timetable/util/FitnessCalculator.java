@@ -1,27 +1,19 @@
 package sk.karolina.timetable.util;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import sk.karolina.timetable.entity.Fitness;
 import sk.karolina.timetable.entity.Member;
 import sk.karolina.timetable.entity.Timetable;
 import sk.karolina.timetable.enums.Level;
-import sk.karolina.timetable.io.MembersWriter;
 import sk.karolina.timetable.io.Parameters;
+import sk.karolina.timetable.strategy.ITimetableHolePenaltyStrategy;
 
-public class Fitness {
-
-	private List<Double> programHappinesses;
-	private List<Double> timetableHappinesses;
-
-	public Fitness() {
-		this.programHappinesses = new ArrayList<>();
-		this.timetableHappinesses = new ArrayList<>();
-	}
+public class FitnessCalculator {
 
 	// najprv vyradim zjavne zle rozvrhy
 	// potom pre kazdeho cloveka spocitam ich "vacsie" preferencie
@@ -30,9 +22,12 @@ public class Fitness {
 	// vysledne skore vydelim suctom dolezitosti
 	// a este ho vydelim aj maximalnym dosiahnutelnym skore
 	// na konci penalizujem rozvrh za nekompletne stvorylky
-	public double calculate(Parameters parameters, Timetable timetable, List<Member> members) {
+	public Fitness calculate(Parameters parameters, Timetable timetable, List<Member> members, ITimetableHolePenaltyStrategy strategy) {
 		double fitness = 0;
 		int hours = parameters.getHours();
+		List<Double> programHappinesses, timetableHappinesses;
+		programHappinesses = new ArrayList<>();
+		timetableHappinesses = new ArrayList<>();
 
 		// penalizuj pripady, kedy RD_PRIPRAVKA a SD_MS_VYUKA nie su pocas
 		// prvych dvoch hodin
@@ -49,7 +44,7 @@ public class Fitness {
 
 		if (parameters.isPripravkaAtBeginning()
 				&& (levelCounts.get(Level.RD_PRIPRAVKA) < 1 || levelCounts.get(Level.SD_MS_VYUKA) < 1)) {
-			return fitness;
+			return new Fitness(0, programHappinesses, timetableHappinesses);
 		}
 
 		// penalizuj pripady, kedy sa niektora uroven nachadza viac raz
@@ -60,32 +55,32 @@ public class Fitness {
 
 		for (int count : levelCounts.values()) {
 			if (count > 1) {
-				return fitness;
+				return new Fitness(0, programHappinesses, timetableHappinesses);
 			}
 		}
 
 		// penalizuj pripady, kedy je v obidvoch salach SD alebo RD naraz
 		for (int i = 0; i < hours; i++) {
-			boolean isRoundMala = timetable.getLevel(i * 2).isRound();
-			boolean isRoundVelka = timetable.getLevel(i * 2 + 1).isRound();
+			boolean isRoundSmall = timetable.getLevel(i * 2).isRound();
+			boolean isRoundLarge = timetable.getLevel(i * 2 + 1).isRound();
 
-			if ((isRoundMala && isRoundVelka) || (!isRoundMala && !isRoundVelka)) {
-				return fitness;
+			if ((isRoundSmall && isRoundLarge) || (!isRoundSmall && !isRoundLarge)) {
+				return new Fitness(0, programHappinesses, timetableHappinesses);
 			}
 		}
 
 		// ak je rozvrh stale viable, spocitaj jeho fitness
-		int preference1, preference2, maxPreference, countUnwantedBetweenWanted;
+		int preference1, preference2, maxPreference, countUnwantedBetweenWanted, countUnwantedLocal;
 		double memberFitness, totalPenaltyUnwantedBetweenWanted, importancesSum = 0;
 		List<Integer> maxPrefs;
 		List<Double> squarePrefCounts = new ArrayList<>(Collections.nCopies(4, 0.0));
-		boolean wantedBlockStarted, wantedBlockEnded;
+		boolean wantedInProgress, unwantedInProgress;
 		Level level1, level2;
 
 		for (Member member : members) {
-			memberFitness = countUnwantedBetweenWanted = 0;
+			memberFitness = countUnwantedBetweenWanted = countUnwantedLocal = 0;
 			maxPrefs = new ArrayList<>();
-			wantedBlockStarted = wantedBlockEnded = false;
+			wantedInProgress = unwantedInProgress = false;
 
 			for (int i = 0; i < hours; i++) {
 				level1 = timetable.getLevel(i * 2);
@@ -106,53 +101,43 @@ public class Fitness {
 				}
 			}
 
-			this.programHappinesses.add(memberFitness);
+			programHappinesses.add(memberFitness);
 
 			// penalizuj pripady, kedy ma clovek dieru v rozvrhu
-			// block sa zacina prvym vyskytom wanted programu a konci prvym
-			// dalsim vyskytom wanted programu po tom, co bol nejaky unwanted
-			// program
 			for (int i = 0; i < hours; i++) {
-				if (!wantedBlockStarted && !wantedBlockEnded
-						&& maxPrefs.get(i) >= parameters.getThresholdWantedPreference()) {
-					wantedBlockStarted = true;
-					continue;
-				}
-
-				if (wantedBlockStarted && !wantedBlockEnded
-						&& maxPrefs.get(i) <= parameters.getThresholdUnwantedPreference()) {
-					countUnwantedBetweenWanted++;
-					continue;
-				}
-
-				if (wantedBlockStarted && !wantedBlockEnded && countUnwantedBetweenWanted > 0
-						&& maxPrefs.get(i) >= parameters.getThresholdWantedPreference()) {
-					wantedBlockEnded = true;
+				if (maxPrefs.get(i) >= parameters.getThresholdWantedPreference()) {
+					if (!wantedInProgress && !unwantedInProgress) {
+						wantedInProgress = true;
+					} else if (!wantedInProgress && unwantedInProgress) {
+						wantedInProgress = true;
+						unwantedInProgress = false;
+						countUnwantedBetweenWanted += countUnwantedLocal;
+						countUnwantedLocal = 0;
+					} else if (wantedInProgress && !unwantedInProgress) {
+						// do nothing
+					} else {
+						// should not happen
+					}
+				} else if (maxPrefs.get(i) <= parameters.getThresholdUnwantedPreference()) {
+					if (!wantedInProgress && !unwantedInProgress) {
+						// ak ma clovek na zaciatku vecera program, ktory ho
+						// nezaujima, tak jednoducho pride neskor
+					} else if (!wantedInProgress && unwantedInProgress) {
+						countUnwantedLocal++;
+					} else if (wantedInProgress && !unwantedInProgress) {
+						wantedInProgress = false;
+						unwantedInProgress = true;
+						countUnwantedLocal++;
+					} else {
+						// should not happen
+					}
 				}
 			}
 
-			if (wantedBlockStarted && !wantedBlockEnded) {
-				countUnwantedBetweenWanted = 0;
-			}
-
-			switch (countUnwantedBetweenWanted) {
-			case 0:
-				totalPenaltyUnwantedBetweenWanted = 0;
-				break;
-			case 1:
-				totalPenaltyUnwantedBetweenWanted = parameters.getPenalty1UnwantedBetweenWanted();
-				break;
-			case 2:
-				totalPenaltyUnwantedBetweenWanted = parameters.getPenalty1UnwantedBetweenWanted()
-						+ parameters.getPenalty2UnwantedBetweenWanted();
-				break;
-			default:
-				throw new IllegalStateException("countUnwantedBetweenWanted was " + countUnwantedBetweenWanted);
-			}
-
+			totalPenaltyUnwantedBetweenWanted = strategy.calculatePenalty(parameters, countUnwantedBetweenWanted);
 			double timetableHappiness = 1 - totalPenaltyUnwantedBetweenWanted;
 			memberFitness *= timetableHappiness;
-			this.timetableHappinesses.add(timetableHappiness);
+			timetableHappinesses.add(timetableHappiness);
 			// napr. jirkove tanecne preferencie nas nezaujimaju, kedze 99% casu calleruje
 			// podobne preferencie vierky puchlovej nas nezaujimaju, pretoze nebude chodit nezavisle od rozvrhu
 			// z tohto hladiska by sme mohli skore cloveka nasobit aj jeho dochadzkou,
@@ -177,10 +162,6 @@ public class Fitness {
 			}
 		}
 
-		return fitness;
-	}
-
-	public void write() throws IOException {
-		MembersWriter.write(programHappinesses, timetableHappinesses);
+		return new Fitness(fitness, programHappinesses, timetableHappinesses);
 	}
 }
