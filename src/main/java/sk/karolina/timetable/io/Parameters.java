@@ -14,6 +14,8 @@ public class Parameters {
 	private int iterations, hours, maxPointMutations;
 	private boolean startFromCurrentTimetable;
 	private List<Level> currentTimetable;
+	private boolean forceLevel;
+	private Level levelToForce;
 	private int timetableHolePenaltyStrategy;
 	private int thresholdUnwantedPreference, thresholdWantedPreference;
 	private double penalty1UnwantedBetweenWanted, penalty2UnwantedBetweenWanted;
@@ -36,6 +38,8 @@ public class Parameters {
 		startFromCurrentTimetable = Boolean.parseBoolean(properties.getProperty("startFromCurrentTimetable"));
 		currentTimetable = Arrays.asList(properties.getProperty("currentTimetable").split(", ")).stream()
 				.map(string -> Level.valueOf(string)).collect(Collectors.toList());
+		forceLevel = Boolean.parseBoolean(properties.getProperty("forceLevel"));
+		levelToForce = Enum.valueOf(Level.class, properties.getProperty("levelToForce"));
 
 		timetableHolePenaltyStrategy = Integer.parseInt(properties.getProperty("timetableHolePenaltyStrategy"));
 		thresholdUnwantedPreference = Integer.parseInt(properties.getProperty("thresholdUnwantedPreference"));
@@ -82,6 +86,14 @@ public class Parameters {
 
 	public List<Level> getCurrentTimetable() {
 		return currentTimetable;
+	}
+
+	public boolean isForceLevel() {
+		return forceLevel;
+	}
+
+	public Level getLevelToForce() {
+		return levelToForce;
 	}
 
 	public int getTimetableHolePenaltyStrategy() {

@@ -59,6 +59,11 @@ public class FitnessCalculator {
 			}
 		}
 
+		// penalizuj pripady, kedy sa urcita uroven v rozvrhu vobec nenachadza
+		if(parameters.isForceLevel() && levelCounts.get(parameters.getLevelToForce()) < 1) {
+			return new Fitness(0, programHappinesses, timetableHappinesses);
+		}
+
 		// penalizuj pripady, kedy je v obidvoch salach SD alebo RD naraz
 		for (int i = 0; i < hours; i++) {
 			boolean isRoundSmall = timetable.getLevel(i * 2).isRound();
