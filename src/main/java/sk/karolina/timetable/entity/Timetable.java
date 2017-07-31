@@ -33,10 +33,6 @@ public class Timetable {
 			for (int i = 1; i <= parameters.getHours() * 2; i++) {
 				timetable.add(Level.getRandomLevel());
 			}
-
-			if(parameters.isForceLevel() && !timetable.contains(parameters.getLevelToForce())) {
-				timetable.set(random.nextInt(timetable.size()), parameters.getLevelToForce());
-			}
 		}
 	}
 
