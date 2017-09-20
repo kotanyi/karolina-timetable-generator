@@ -16,6 +16,7 @@ public class Parameters {
 	private List<Level> currentTimetable;
 	private boolean forceLevel;
 	private Level levelToForce;
+	private boolean lastYearShouldHelpThisYear;
 	private int timetableHolePenaltyStrategy;
 	private int thresholdUnwantedPreference, thresholdWantedPreference;
 	private double penalty1UnwantedBetweenWanted, penalty2UnwantedBetweenWanted;
@@ -40,6 +41,7 @@ public class Parameters {
 				.map(string -> Level.valueOf(string)).collect(Collectors.toList());
 		forceLevel = Boolean.parseBoolean(properties.getProperty("forceLevel"));
 		levelToForce = Enum.valueOf(Level.class, properties.getProperty("levelToForce"));
+		lastYearShouldHelpThisYear = Boolean.parseBoolean(properties.getProperty("lastYearShouldHelpThisYear"));
 
 		timetableHolePenaltyStrategy = Integer.parseInt(properties.getProperty("timetableHolePenaltyStrategy"));
 		thresholdUnwantedPreference = Integer.parseInt(properties.getProperty("thresholdUnwantedPreference"));
@@ -94,6 +96,10 @@ public class Parameters {
 
 	public Level getLevelToForce() {
 		return levelToForce;
+	}
+
+	public boolean isLastYearShouldHelpThisYear() {
+		return lastYearShouldHelpThisYear;
 	}
 
 	public int getTimetableHolePenaltyStrategy() {

@@ -12,4 +12,4 @@ for level in "${levels[@]}"; do
 	done
 done
 
-sort -u out | sort -nr > out.unique
+sort -u out | sort -nr > out_unique

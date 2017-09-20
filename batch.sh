@@ -5,4 +5,4 @@ for (( i=1; i<=$1; i++ )); do
     java -jar target/timetable-0.0.1-SNAPSHOT.jar Main | tail -1 >> out
 done
 
-sort -u out | sort -nr > out.unique
+sort -u out | sort -nr > out_unique

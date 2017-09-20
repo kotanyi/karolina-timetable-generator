@@ -74,6 +74,22 @@ public class FitnessCalculator {
 			}
 		}
 
+		// penalizuj pripady, kedy minulorocna pripravka nepomaha tohtorocnej
+		boolean lastYearsBeginnersCannotHelp = false;
+
+		for(int i = 0; i < hours; i++) {
+			if(timetable.getLevel(i * 2) == Level.SD_MS_VYUKA && (timetable.getLevel(i * 2 + 1) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2 + 1) == Level.RD_LAHKY) ||
+					timetable.getLevel(i * 2 + 1) == Level.SD_MS_VYUKA && (timetable.getLevel(i * 2) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2) == Level.RD_LAHKY) ||
+					timetable.getLevel(i * 2) == Level.RD_PRIPRAVKA && (timetable.getLevel(i * 2 + 1) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2 + 1) == Level.RD_LAHKY) ||
+					timetable.getLevel(i * 2 + 1) == Level.RD_PRIPRAVKA && (timetable.getLevel(i * 2) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2) == Level.RD_LAHKY)) {
+						lastYearsBeginnersCannotHelp = true;
+			}
+		}
+
+		if(lastYearsBeginnersCannotHelp) {
+			return new Fitness(0, programHappinesses, timetableHappinesses);
+		}
+
 		// ak je rozvrh stale viable, spocitaj jeho fitness
 		int preference1, preference2, maxPreference, countUnwantedBetweenWanted, countUnwantedLocal;
 		double memberFitness, totalPenaltyUnwantedBetweenWanted, importancesSum = 0;
