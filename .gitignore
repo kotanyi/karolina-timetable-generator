@@ -4,7 +4,10 @@ RemoteSystemsTempFiles
 *.orig
 *.log.*
 target/
-
+out*
+fitness*
+sub_*
+winners*
 
 # Compiled class file
 *.class
