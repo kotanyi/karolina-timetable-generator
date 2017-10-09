@@ -11,6 +11,9 @@ Features include:
 * A person's attendance (the likelihood they are present at the club evening) can be specified. This is used to penalise timetables where there would not be enough dancers for a square tip.
 * A person's "importance" can be specified - for example, someone who only attends one specific level can be assigned a low importance as they will attend the club evening no matter the timetable
 
+## Install & run
+Install using `mvn clean install`. Run using `java -jar target/timetable-0.0.1-SNAPSHOT.jar Main`.
+
 ## Input
 ### Preferences file
 A CSV file named `members.csv` where each row represents a single person. The first column is their name, the following columns contain their preferences for the different dance levels, in this order: round dance (RD) beginner class, easy RD, intermediate RD, advanced RD, square dance (SD) Mainstream class, SD Mainstream dancing, SD Plus class, SD Plus dancing, SD A1 class, SD A1 dancing, SD A2 class, SD A2 dancing.
