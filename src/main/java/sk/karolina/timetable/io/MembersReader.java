@@ -14,13 +14,7 @@ import sk.karolina.timetable.enums.Level;
 
 public class MembersReader {
 	
-	private Parameters parameters;
-	
-	public MembersReader(Parameters parameters) {
-		this.parameters = parameters;
-	}
-	
-	public List<Member> read() throws IOException {
+	public static List<Member> read() throws IOException {
 		Reader reader = new FileReader("members.csv");
 		Iterable<CSVRecord> records = CSVFormat.EXCEL.parse(reader);
 		List<Member> members = new ArrayList<Member>();
@@ -48,24 +42,24 @@ public class MembersReader {
     	return members;
 	}
 	
-	private int mapPreferenceStringToInt(String preference) {
+	private static int mapPreferenceStringToInt(String preference) {
 		switch (preference) {
 		case "chcem priorita 1":
-			return this.parameters.getCHCEM1();
+			return Parameters.getInstance().getCHCEM1();
 		case "chcem priorita 2":
-			return this.parameters.getCHCEM2();
+			return Parameters.getInstance().getCHCEM2();
 		case "chcem priorita 3":
-			return this.parameters.getCHCEM3();
+			return Parameters.getInstance().getCHCEM3();
 		case "chcem priorita 4":
-			return this.parameters.getCHCEM4();
+			return Parameters.getInstance().getCHCEM4();
 		case "rád(a)":
-			return this.parameters.getRAD();
+			return Parameters.getInstance().getRAD();
 		case "môžem":
-			return this.parameters.getMOZEM();
+			return Parameters.getInstance().getMOZEM();
 		case "nechcem":
-			return this.parameters.getNECHCEM();
+			return Parameters.getInstance().getNECHCEM();
 		case "neviem":
-			return this.parameters.getNEVIEM();
+			return Parameters.getInstance().getNEVIEM();
 		default:
 			throw new IllegalArgumentException("Illegal preference '" + preference + "'");
 		}

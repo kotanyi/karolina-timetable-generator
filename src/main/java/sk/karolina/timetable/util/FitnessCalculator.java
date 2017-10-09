@@ -11,7 +11,7 @@ import sk.karolina.timetable.entity.Member;
 import sk.karolina.timetable.entity.Timetable;
 import sk.karolina.timetable.enums.Level;
 import sk.karolina.timetable.io.Parameters;
-import sk.karolina.timetable.strategy.ITimetableHolePenaltyStrategy;
+import sk.karolina.timetable.penalty.ITimetableHolePenaltyStrategy;
 
 public class FitnessCalculator {
 
@@ -22,9 +22,9 @@ public class FitnessCalculator {
 	// vysledne skore vydelim suctom dolezitosti
 	// a este ho vydelim aj maximalnym dosiahnutelnym skore
 	// na konci penalizujem rozvrh za nekompletne stvorylky
-	public Fitness calculate(Parameters parameters, Timetable timetable, List<Member> members, ITimetableHolePenaltyStrategy strategy) {
+	public static Fitness calculate(Timetable timetable, List<Member> members, ITimetableHolePenaltyStrategy strategy) {
 		double fitness = 0;
-		int hours = parameters.getHours();
+		int hours = Parameters.getInstance().getHours();
 		List<Double> programHappinesses, timetableHappinesses;
 		programHappinesses = new ArrayList<>();
 		timetableHappinesses = new ArrayList<>();
@@ -42,13 +42,13 @@ public class FitnessCalculator {
 			levelCounts.put(level, levelCounts.get(level) + 1);
 		}
 
-		if (parameters.isPripravkaAtBeginning()
+		if (Parameters.getInstance().isPripravkaAtBeginning()
 				&& (levelCounts.get(Level.RD_PRIPRAVKA) < 1 || levelCounts.get(Level.SD_MS_VYUKA) < 1)) {
 			return new Fitness(0, programHappinesses, timetableHappinesses);
 		}
 
 		// penalizuj pripady, kedy sa niektora uroven nachadza viac raz
-		for (int i = 4; i < timetable.getSize(); i++) {
+		for (int i = 4; i < hours * 2; i++) {
 			Level level = timetable.getLevel(i);
 			levelCounts.put(level, levelCounts.get(level) + 1);
 		}
@@ -60,29 +60,33 @@ public class FitnessCalculator {
 		}
 
 		// penalizuj pripady, kedy sa urcita uroven v rozvrhu vobec nenachadza
-		if(parameters.isForceLevel() && levelCounts.get(parameters.getLevelToForce()) < 1) {
-			return new Fitness(0, programHappinesses, timetableHappinesses);
+		if(Parameters.getInstance().isForceLevels()) {
+			for(Level level : Parameters.getInstance().getLevelsToForce()) {
+				if(!timetable.contains(level)) {
+					return new Fitness(0, programHappinesses, timetableHappinesses);
+				}
+			}
 		}
 
-		// penalizuj pripady, kedy je v obidvoch salach SD alebo RD naraz
+		boolean isRoundSmall, isRoundLarge, lastYearsBeginnersCannotHelp = false;
+		
 		for (int i = 0; i < hours; i++) {
-			boolean isRoundSmall = timetable.getLevel(i * 2).isRound();
-			boolean isRoundLarge = timetable.getLevel(i * 2 + 1).isRound();
+			// penalizuj pripady, kedy je v obidvoch salach SD alebo RD naraz
+			isRoundSmall = timetable.getLevel(i * 2).isRound();
+			isRoundLarge = timetable.getLevel(i * 2 + 1).isRound();
 
 			if ((isRoundSmall && isRoundLarge) || (!isRoundSmall && !isRoundLarge)) {
 				return new Fitness(0, programHappinesses, timetableHappinesses);
 			}
-		}
-
-		// penalizuj pripady, kedy minulorocna pripravka nepomaha tohtorocnej
-		boolean lastYearsBeginnersCannotHelp = false;
-
-		for(int i = 0; i < hours; i++) {
-			if(timetable.getLevel(i * 2) == Level.SD_MS_VYUKA && (timetable.getLevel(i * 2 + 1) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2 + 1) == Level.RD_LAHKY) ||
-					timetable.getLevel(i * 2 + 1) == Level.SD_MS_VYUKA && (timetable.getLevel(i * 2) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2) == Level.RD_LAHKY) ||
-					timetable.getLevel(i * 2) == Level.RD_PRIPRAVKA && (timetable.getLevel(i * 2 + 1) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2 + 1) == Level.RD_LAHKY) ||
-					timetable.getLevel(i * 2 + 1) == Level.RD_PRIPRAVKA && (timetable.getLevel(i * 2) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2) == Level.RD_LAHKY)) {
-						lastYearsBeginnersCannotHelp = true;
+			
+			// penalizuj pripady, kedy minulorocna pripravka nepomaha tohtorocnej
+			if(Parameters.getInstance().isLastYearShouldHelpThisYear()) {
+				if(timetable.getLevel(i * 2) == Level.SD_MS_VYUKA && (timetable.getLevel(i * 2 + 1) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2 + 1) == Level.RD_LAHKY) ||
+						timetable.getLevel(i * 2 + 1) == Level.SD_MS_VYUKA && (timetable.getLevel(i * 2) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2) == Level.RD_LAHKY) ||
+						timetable.getLevel(i * 2) == Level.RD_PRIPRAVKA && (timetable.getLevel(i * 2 + 1) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2 + 1) == Level.RD_LAHKY) ||
+						timetable.getLevel(i * 2 + 1) == Level.RD_PRIPRAVKA && (timetable.getLevel(i * 2) == Level.SD_MS_TANCOVANIE || timetable.getLevel(i * 2) == Level.RD_LAHKY)) {
+							lastYearsBeginnersCannotHelp = true;
+				}
 			}
 		}
 
@@ -92,7 +96,7 @@ public class FitnessCalculator {
 
 		// ak je rozvrh stale viable, spocitaj jeho fitness
 		int preference1, preference2, maxPreference, countUnwantedBetweenWanted, countUnwantedLocal;
-		double memberFitness, totalPenaltyUnwantedBetweenWanted, importancesSum = 0;
+		double memberFitness, totalPenaltyUnwantedBetweenWanted, importancesSum = 0, timetableHappiness, importance;
 		List<Integer> maxPrefs;
 		List<Double> squarePrefCounts = new ArrayList<>(Collections.nCopies(4, 0.0));
 		boolean wantedInProgress, unwantedInProgress;
@@ -113,10 +117,10 @@ public class FitnessCalculator {
 				memberFitness += maxPreference;
 
 				// chce (a vie) clovek tancovat square viac ako round? (je dost ludi na stvorylku?)
-				if ((!level1.isRound() && preference1 >= preference2 && preference1 != parameters.getNEVIEM()
-						&& preference1 != parameters.getNECHCEM())
-						|| (!level2.isRound() && preference2 >= preference1 && preference2 != parameters.getNEVIEM()
-								&& preference2 != parameters.getNECHCEM())) {
+				if ((!level1.isRound() && preference1 >= preference2 && preference1 != Parameters.getInstance().getNEVIEM()
+						&& preference1 != Parameters.getInstance().getNECHCEM())
+						|| (!level2.isRound() && preference2 >= preference1 && preference2 != Parameters.getInstance().getNEVIEM()
+								&& preference2 != Parameters.getInstance().getNECHCEM())) {
 					// toto sa sice vola counts, ale realne je to sucet pravdepodobnosti (pravdepodobnost, ze je clovek na klubaci)
 					squarePrefCounts.set(i, squarePrefCounts.get(i) + member.getAttendance());
 				}
@@ -126,7 +130,7 @@ public class FitnessCalculator {
 
 			// penalizuj pripady, kedy ma clovek dieru v rozvrhu
 			for (int i = 0; i < hours; i++) {
-				if (maxPrefs.get(i) >= parameters.getThresholdWantedPreference()) {
+				if (maxPrefs.get(i) >= Parameters.getInstance().getThresholdWantedPreference()) {
 					if (!wantedInProgress && !unwantedInProgress) {
 						wantedInProgress = true;
 					} else if (!wantedInProgress && unwantedInProgress) {
@@ -139,7 +143,7 @@ public class FitnessCalculator {
 					} else {
 						// should not happen
 					}
-				} else if (maxPrefs.get(i) <= parameters.getThresholdUnwantedPreference()) {
+				} else if (maxPrefs.get(i) <= Parameters.getInstance().getThresholdUnwantedPreference()) {
 					if (!wantedInProgress && !unwantedInProgress) {
 						// ak ma clovek na zaciatku vecera program, ktory ho
 						// nezaujima, tak jednoducho pride neskor
@@ -155,31 +159,32 @@ public class FitnessCalculator {
 				}
 			}
 
-			totalPenaltyUnwantedBetweenWanted = strategy.calculatePenalty(parameters, countUnwantedBetweenWanted);
-			double timetableHappiness = 1 - totalPenaltyUnwantedBetweenWanted;
+			totalPenaltyUnwantedBetweenWanted = strategy.calculatePenalty(countUnwantedBetweenWanted);
+			timetableHappiness = 1 - totalPenaltyUnwantedBetweenWanted;
 			memberFitness *= timetableHappiness;
 			timetableHappinesses.add(timetableHappiness);
 			// napr. jirkove tanecne preferencie nas nezaujimaju, kedze 99% casu calleruje
 			// podobne preferencie vierky puchlovej nas nezaujimaju, pretoze nebude chodit nezavisle od rozvrhu
 			// z tohto hladiska by sme mohli skore cloveka nasobit aj jeho dochadzkou,
 			// ale takto by sme mohli diskriminovat ludi, ktori chodia malo, ale kebyze je lepsi rozvrh, chodili by viac
-			memberFitness *= member.getImportance();
+			importance = member.getImportance();
+			memberFitness *= importance;
 			fitness += memberFitness;
-			importancesSum += member.getImportance();
+			importancesSum += importance;
 		}
 
 		fitness /= importancesSum
-				* (parameters.getCHCEM1() + parameters.getCHCEM2() + parameters.getCHCEM3() + parameters.getCHCEM4());
+				* (Parameters.getInstance().getCHCEM1() + Parameters.getInstance().getCHCEM2() + Parameters.getInstance().getCHCEM3() + Parameters.getInstance().getCHCEM4());
 
 		// penalizuj rozvrhy, kde treba stvorylky doplnat z roundovych
 		// tanecnikov
 		for (double count : squarePrefCounts) {
-			if (count <= parameters.getIncompleteSquare()) {
-				fitness *= parameters.getPenaltyIncomplete();
+			if (count <= Parameters.getInstance().getIncompleteSquare()) {
+				fitness *= Parameters.getInstance().getPenaltyIncomplete();
 				continue;
 			}
-			if (count <= parameters.getNotEnoughSparesForSquare()) {
-				fitness *= parameters.getPenaltyNotEnoughSpares();
+			if (count <= Parameters.getInstance().getNotEnoughSparesForSquare()) {
+				fitness *= Parameters.getInstance().getPenaltyNotEnoughSpares();
 			}
 		}
 

@@ -13,24 +13,21 @@ public class Timetable {
 
 	private static final Random random = new Random();
 
-	private Parameters parameters;
 	private List<Level> timetable;
 
-	public Timetable(Parameters parameters) {
-		this.parameters = parameters;
+	public Timetable() {
 		timetable = new ArrayList<>();
 	}
 
 	public Timetable(Timetable timetable) {
-		this.parameters = timetable.parameters;
 		this.timetable = new ArrayList<Level>(timetable.timetable);
 	}
 
 	public void generate() {
-		if (parameters.isStartFromCurrentTimetable()) {
-			this.timetable = parameters.getCurrentTimetable();
+		if (Parameters.getInstance().isStartFromCurrentTimetable()) {
+			this.timetable = Parameters.getInstance().getCurrentTimetable();
 		} else {
-			for (int i = 1; i <= parameters.getHours() * 2; i++) {
+			for (int i = 1; i <= Parameters.getInstance().getHours() * 2; i++) {
 				timetable.add(Level.getRandomLevel());
 			}
 		}
@@ -41,7 +38,7 @@ public class Timetable {
 
 		switch (random.nextInt(2)) {
 		case 0: // point mutation
-			int pointMutations = random.nextInt(parameters.getMaxPointMutations()) + 1;
+			int pointMutations = random.nextInt(Parameters.getInstance().getMaxPointMutations()) + 1;
 
 			for (int i = 1; i <= pointMutations; i++) {
 				timetable.set(random.nextInt(timetableSize), Level.getRandomLevel());
@@ -55,23 +52,23 @@ public class Timetable {
 		}
 	}
 
-	public int getSize() {
-		return timetable.size();
-	}
-
 	public Level getLevel(int index) {
 		return timetable.get(index);
+	}
+	
+	public boolean contains(Level level) {
+		return timetable.contains(level);
 	}
 
 	@Override
 	public String toString() {
-		for (int i = 0; i < parameters.getHours(); i++) {
+		for (int i = 0; i < Parameters.getInstance().getHours(); i++) {
 			if (timetable.get(i * 2).isRound()) {
 				Collections.swap(timetable, i * 2, i * 2 + 1);
 			}
 		}
 
-		return String.join(", ", timetable.stream().map(level -> level.name()).collect(Collectors.toList()));
+		return String.join(", ", timetable.stream().map(level -> level.toString()).collect(Collectors.toList()));
 	}
 
 }
