@@ -1,10 +1,11 @@
 #!/bin/bash
-#for each level, the script runs the java program $1 times. do not forget to set forceLevel to true.
+#the script iterates over all levels one by one, setting each as levelsToForce and running the java program $1 times.
 levels=( 'SD_MS_VYUKA' 'SD_MS_TANCOVANIE' 'SD_PLUS_VYUKA' 'SD_PLUS_TANCOVANIE' 'SD_A1_VYUKA' 'SD_A1_TANCOVANIE' )
+sed -i "s/forceLevels=.\+/forceLevels=true/" parameters.properties
 
 for level in "${levels[@]}"; do
-	sed -i "s/levelToForce=.\+/levelToForce=$level/" parameters.properties
-	echo "levelToForce=$level"
+	sed -i "s/levelsToForce=.\+/levelsToForce=$level/" parameters.properties
+	echo "levelsToForce=$level"
 
 	for (( i=1; i<=$1; i++ )); do
 	    echo $i

@@ -1,4 +1,5 @@
 #!/bin/bash
+#run the java program $1 times, removing duplicit timetables and sorting them by fitness in descending order afterwards
 
 for (( i=1; i<=$1; i++ )); do
     echo $i

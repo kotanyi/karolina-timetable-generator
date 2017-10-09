@@ -1,5 +1,6 @@
 #!/bin/bash
-#calculates fitness for all timetables specified line-by-line in a file specified by $1. do not forget to set calculateFitnessOnly to true.
+#calculates fitness for all timetables specified line-by-line in a file specified by $1.
+sed -i "s/calculateFitnessOnly=.\+/calculateFitnessOnly=true/" parameters.properties
 
 rm -f fitness
 number_of_lines=$(wc -l "$1" | cut -f1 -d' ')
