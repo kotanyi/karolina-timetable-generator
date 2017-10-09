@@ -51,3 +51,6 @@ A Java .properties file named `parameters.properties`. The following parameters 
 The programme outputs a CSV file `happinesses.csv` where each row represents a single person in the same order as in the `members.csv` input file. The first column contains numbers representing people's satisfaction with the dance levels in the timetable - whether they can dance the levels they would like to dance (the higher the number, the more satisfied the person is). The second column contains numbers representing how good the timetable is in terms of timetable gaps (the higher the number, the fewer gaps). This can be used to compare individual people's satisfaction with different timetables generated.
 
 Overall timetable fitness is printed to standard output after the programme finishes running. Furthermore, when the input parameter `calculateFitnessOnly` is set to `false`, timetable fitness is printed in each iteration of the algorithm.
+
+## Scripts
+A number of useful Bash scripts are provided for running the programme repeatedly. Descriptions are provided within the script files.
